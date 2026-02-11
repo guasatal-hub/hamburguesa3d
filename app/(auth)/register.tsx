@@ -18,39 +18,32 @@ export default function Register() {
 
     setLoading(true);
 
-    // 1. Crear el usuario en la sección de Autenticación
-    const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+    // 1️⃣ Crear usuario en Auth
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    if (signUpError) {
-      Alert.alert("Error de registro", signUpError.message);
+    if (error) {
+      Alert.alert("Error de registro", error.message);
       setLoading(false);
       return;
     }
 
-    // 2. Si el usuario se creó, lo guardamos en nuestra tabla 'profiles'
-    if (user) {
-      const { error: profileError } = await supabase
+    // 2️⃣ Actualizar username en la tabla profiles (el perfil ya lo crea el trigger)
+    if (data.user) {
+      const { error: updateError } = await supabase
         .from('profiles')
-        .insert([
-          { 
-            id: user.id, // Usamos el mismo ID que generó Auth
-            username: username,
-            email: email,
-            expo_push_token: null // Se llenará cuando entre a la app
-          }
-        ]);
+        .update({ username })
+        .eq('id', data.user.id);
 
-      if (profileError) {
-        console.error("Error al crear perfil:", profileError.message);
-      } else {
-        Alert.alert("¡Éxito!", "Cuenta creada. Revisa tu correo si activaste la confirmación.");
-        router.replace('/(auth)/login');
+      if (updateError) {
+        console.log("Error actualizando username:", updateError.message);
       }
     }
-    
+
+    Alert.alert("¡Éxito!", "Cuenta creada correctamente");
+    router.replace('/(auth)/login');
     setLoading(false);
   }
 
@@ -86,11 +79,15 @@ export default function Register() {
         onPress={handleSignUp}
         disabled={loading}
       >
-        <Text style={styles.buttonText}>{loading ? "CREANDO..." : "REGISTRARME"}</Text>
+        <Text style={styles.buttonText}>
+          {loading ? "CREANDO..." : "REGISTRARME"}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.back()} style={styles.link}>
-        <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia sesión</Text>
+        <Text style={styles.linkText}>
+          ¿Ya tienes cuenta? Inicia sesión
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
