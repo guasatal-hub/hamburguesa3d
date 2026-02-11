@@ -1,13 +1,13 @@
 import React, { Suspense, useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Canvas } from '@react-three/fiber/native';
+import { supabase } from '../lib/supabase'; // <--- Importante para poder salir
 
-// --- COMPONENTE DE SEGURIDAD (Si falla el 3D, muestra un bloque sólido) ---
+// --- COMPONENTE DE SEGURIDAD ---
 function IngredientMesh({ color, visible, positionY }: { color: string, visible: boolean, positionY: number }) {
   if (!visible) return null;
   return (
     <mesh position={[0, positionY, 0]}>
-      {/* Usamos cilindros aplanados para que parezcan piezas de hamburguesa */}
       <cylinderGeometry args={[1.2, 1.2, 0.3, 32]} />
       <meshStandardMaterial color={color} />
     </mesh>
@@ -15,7 +15,6 @@ function IngredientMesh({ color, visible, positionY }: { color: string, visible:
 }
 
 export default function HamburgerApp() {
-  // --- ESTADO DEL MENÚ (Tu reto) ---
   const [config, setConfig] = useState({
     pan: true,
     carne: true,
@@ -26,6 +25,11 @@ export default function HamburgerApp() {
     setConfig(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
+  // --- FUNCIÓN PARA SALIR ---
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.canvasBox}>
@@ -34,26 +38,23 @@ export default function HamburgerApp() {
           <pointLight position={[10, 10, 10]} />
           
           <Suspense fallback={null}>
-            {/* PAN SUPERIOR (Dorado) */}
             <IngredientMesh color="#D2B48C" visible={config.pan} positionY={1.2} />
-            
-            {/* QUESO (Amarillo) */}
             <IngredientMesh color="#FFD700" visible={config.queso} positionY={0.6} />
-            
-            {/* CARNE (Café) */}
             <IngredientMesh color="#5D4037" visible={config.carne} positionY={0} />
-            
-            {/* BASE (Dorado) */}
             <IngredientMesh color="#D2B48C" visible={true} positionY={-0.6} />
           </Suspense>
         </Canvas>
       </View>
 
       <View style={styles.uiBox}>
-        <Text style={styles.title}>🍔 Configurador 3D</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>🍔 Configurador 3D</Text>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Salir</Text>
+          </TouchableOpacity>
+        </View>
         
         <ScrollView contentContainerStyle={styles.scroll}>
-          {/* BOTÓN CARNE */}
           <TouchableOpacity 
             style={[styles.button, config.carne && styles.activeCarne]} 
             onPress={() => toggleIngredient('carne')}
@@ -61,7 +62,6 @@ export default function HamburgerApp() {
             <Text style={styles.btnText}>{config.carne ? "QUITAR CARNE" : "PONER CARNE"}</Text>
           </TouchableOpacity>
 
-          {/* BOTÓN QUESO */}
           <TouchableOpacity 
             style={[styles.button, config.queso && styles.activeQueso]} 
             onPress={() => toggleIngredient('queso')}
@@ -69,7 +69,6 @@ export default function HamburgerApp() {
             <Text style={styles.btnText}>{config.queso ? "QUITAR QUESO" : "PONER QUESO"}</Text>
           </TouchableOpacity>
 
-          {/* BOTÓN PAN */}
           <TouchableOpacity 
             style={[styles.button, config.pan && styles.activePan]} 
             onPress={() => toggleIngredient('pan')}
@@ -92,7 +91,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30, 
     padding: 20 
   },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 22, fontWeight: 'bold' },
+  logoutBtn: { backgroundColor: '#ffeded', padding: 8, borderRadius: 10 },
+  logoutText: { color: '#ff4444', fontWeight: 'bold' },
   scroll: { alignItems: 'center' },
   button: { 
     backgroundColor: '#eee', 
