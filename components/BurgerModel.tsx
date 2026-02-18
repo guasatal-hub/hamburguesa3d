@@ -20,19 +20,40 @@ type IngredientPrimitiveProps = {
   assetModule: number;
   visible: boolean;
   y: number;
+  color: string;
 };
 
-function IngredientPrimitive({ assetModule, visible, y }: IngredientPrimitiveProps) {
+function IngredientPrimitive({
+  assetModule,
+  visible,
+  y,
+  color,
+}: IngredientPrimitiveProps) {
   const asset = useMemo(() => Asset.fromModule(assetModule), [assetModule]);
   const { scene } = useGLTF(asset.uri) as { scene: Object3D };
+
+  const coloredScene = useMemo(() => {
+    const clone = scene.clone(true);
+
+    clone.traverse((child: any) => {
+      if (child.isMesh) {
+        child.material = child.material.clone();
+        child.material.color.set(color);
+        child.material.roughness = 0.7;
+        child.material.metalness = 0.1;
+      }
+    });
+
+    return clone;
+  }, [scene, color]);
 
   if (!visible) {
     return null;
   }
 
-  // eslint-disable-next-line react/no-unknown-property
-  return <primitive object={scene.clone()} position={[0, y, 0]} />;
+  return <primitive object={coloredScene} position={[0, y, 0]} />;
 }
+
 export default function BurgerModel({
   panSuperior,
   panInferior,
@@ -40,21 +61,37 @@ export default function BurgerModel({
   lechuga,
   queso,
 }: Props) {
-
   return (
-    <group scale={1.6}>
+    <group scale={0.6}>
       <IngredientPrimitive
         assetModule={panInferiorModel}
         visible={panInferior}
-        y={-0.45}
+        y={-3.5}
+        color="#D9A066"   // Pan
       />
-      <IngredientPrimitive assetModule={carneModel} visible={carne} y={-0.2} />
-      <IngredientPrimitive assetModule={quesoModel} visible={queso} y={0.03} />
-      <IngredientPrimitive assetModule={lechugaModel} visible={lechuga} y={0.2} />
+      <IngredientPrimitive
+        assetModule={carneModel}
+        visible={carne}
+        y={-1.2}
+        color="#6B2E1A"   // Carne
+      />
+      <IngredientPrimitive
+        assetModule={quesoModel}
+        visible={queso}
+        y={0.03}
+        color="#F4C430"   // Queso
+      />
+      <IngredientPrimitive
+        assetModule={lechugaModel}
+        visible={lechuga}
+        y={-2.3}
+        color="#4CAF50"   // Lechuga
+      />
       <IngredientPrimitive
         assetModule={panSuperiorModel}
         visible={panSuperior}
-        y={0.45}
+        y={0.2}
+        color="#D9A066"   // Pan superior
       />
     </group>
   );
