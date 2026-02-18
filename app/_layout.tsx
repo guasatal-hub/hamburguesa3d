@@ -21,7 +21,7 @@ function AuthLayout() {
     } else if (session && inAuthGroup) {
       router.replace('/');
     }
-  }, [session, loading, segments]);
+  }, [session, loading, segments, router]);
 
   return <Stack />;
 }
