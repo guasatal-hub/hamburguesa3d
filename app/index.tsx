@@ -2,9 +2,14 @@ import BurgerModel from "@/components/BurgerModel";
 import { useAuth } from "@/lib/modules/auth/AuthProvider";
 import { Environment, OrbitControls } from "@react-three/drei/native";
 import { Canvas } from "@react-three/fiber/native";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  registerForPushNotificationsAsync,
+  sendLocalNotification,
+  schedulePromoNotification,
+} from "@/lib/core/notifications/notifications";
 
 const ingredientLabels = {
   panSuperior: "Pan superior",
@@ -27,6 +32,41 @@ export default function Index() {
     queso: true,
   });
 
+  /* 🔔 REGISTRAR NOTIFICACIONES + BIENVENIDA */
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+
+    if (session?.user.email) {
+      sendLocalNotification(
+        "Bienvenido a Burger 3D",
+        `Hola ${session.user.email}, personaliza tu hamburguesa favorita.`
+      );
+    }
+
+    schedulePromoNotification();
+  }, []);
+
+  /* 🔔 VERIFICAR ESTADO DE INGREDIENTES */
+  useEffect(() => {
+    const values = Object.values(ingredients);
+    const allActive = values.every((v) => v === true);
+    const allInactive = values.every((v) => v === false);
+
+    if (allActive) {
+      sendLocalNotification(
+        "Hamburguesa lista",
+        "Tu hamburguesa está completa y lista para ordenar."
+      );
+    }
+
+    if (allInactive) {
+      sendLocalNotification(
+        "Hamburguesa vacía",
+        "Tu hamburguesa está vacía, agrega ingredientes."
+      );
+    }
+  }, [ingredients]);
+
   const toggleIngredient = (ingredient: IngredientKey) => {
     setIngredients((current) => ({
       ...current,
@@ -36,8 +76,6 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      
-      {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.appTitle}>Burger 3D</Text>
@@ -51,7 +89,6 @@ export default function Index() {
         </Pressable>
       </View>
 
-      {/* CARD 3D */}
       <View style={styles.canvasWrapper}>
         <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
           <color attach="background" args={["#FFE8CC"]} />
@@ -65,33 +102,36 @@ export default function Index() {
         </Canvas>
       </View>
 
-      {/* INGREDIENTES */}
-      <Text style={styles.sectionTitle}>Personaliza tu hamburguesa</Text>
+      <Text style={styles.sectionTitle}>
+        Personaliza tu hamburguesa
+      </Text>
 
       <View style={styles.buttonGrid}>
-        {(Object.keys(ingredientLabels) as IngredientKey[]).map((ingredient) => {
-          const isActive = ingredients[ingredient];
+        {(Object.keys(ingredientLabels) as IngredientKey[]).map(
+          (ingredient) => {
+            const isActive = ingredients[ingredient];
 
-          return (
-            <Pressable
-              key={ingredient}
-              onPress={() => toggleIngredient(ingredient)}
-              style={[
-                styles.ingredientButton,
-                isActive && styles.ingredientButtonActive,
-              ]}
-            >
-              <Text
+            return (
+              <Pressable
+                key={ingredient}
+                onPress={() => toggleIngredient(ingredient)}
                 style={[
-                  styles.ingredientButtonText,
-                  isActive && styles.ingredientButtonTextActive,
+                  styles.ingredientButton,
+                  isActive && styles.ingredientButtonActive,
                 ]}
               >
-                {ingredientLabels[ingredient]}
-              </Text>
-            </Pressable>
-          );
-        })}
+                <Text
+                  style={[
+                    styles.ingredientButtonText,
+                    isActive && styles.ingredientButtonTextActive,
+                  ]}
+                >
+                  {ingredientLabels[ingredient]}
+                </Text>
+              </Pressable>
+            );
+          }
+        )}
       </View>
     </View>
   );
@@ -104,8 +144,6 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     backgroundColor: "#FFF4E6",
   },
-
-  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -127,8 +165,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 50,
   },
-
-  /* CANVAS CARD */
   canvasWrapper: {
     width: "100%",
     height: 360,
@@ -138,16 +174,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     elevation: 8,
   },
-
-  /* SECTION TITLE */
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 12,
     color: "#5A3825",
   },
-
-  /* INGREDIENT BUTTONS */
   buttonGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
